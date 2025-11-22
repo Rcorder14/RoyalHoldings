@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Returns Tracker</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Customer Returns Tracker</h1>
+            <p>Professional return management for small businesses</p>
+        </div>
+
+        <div id="setupNotice"></div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen">
+            <div class="card auth-card">
+                <h2 style="text-align:center;margin-bottom:30px;color:#333;">Sign In</h2>
+                <div class="form-group">
+                    <label>Login Type:</label>
+                    <select id="userType">
+                        <option value="business">Business User</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="btn" onclick="handleLogin()" id="loginBtn" style="width:100%;margin-bottom:15px;">Sign
+                    In</button>
+                <div style="text-align:center;">
+                    <p>Don't have an account?
+                        <a href="#" onclick="showRegister()"
+                            style="color:#667eea;text-decoration:none;font-weight:600;">Register as Business</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Screen -->
+        <div id="registerScreen" class="hidden">
+            <div class="card auth-card">
+                <h2 style="text-align:center;margin-bottom:30px;color:#333;">Business Registration</h2>
+                <div class="form-group">
+                    <label>Business Name:</label>
+                    <input type="text" id="regBusinessName" placeholder="Enter business name">
+                </div>
+                <div class="form-group">
+                    <label>Contact Person:</label>
+                    <input type="text" id="regContactName" placeholder="Enter contact person name">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="regEmail" placeholder="Enter email address">
+                </div>
+                <div class="form-group">
+                    <label>Phone:</label>
+                    <input type="tel" id="regPhone" placeholder="Enter phone number">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="regPassword" placeholder="Create a password">
+                </div>
+                <button class="btn" onclick="handleRegister()" id="registerBtn"
+                    style="width:100%;margin-bottom:15px;">Register Business</button>
+                <div style="text-align:center;">
+                    <p>Already have an account?
+                        <a href="#" onclick="showLogin()"
+                            style="color:#667eea;text-decoration:none;font-weight:600;">Sign In</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Dashboard -->
+        <div id="businessDashboard" class="hidden">
+            <div class="dashboard-nav">
+                <div class="logo">Returns Tracker</div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">B</div>
+                    <div>
+                        <div id="businessName" style="font-weight:600;">Business Name</div>
+                        <div style="font-size:14px;color:#666;">Business User</div>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+            <div class="tabs">
+                <button id="tabSearch" class="tab" onclick="showBusinessTab('search')">Search Records</button>
+                <button id="tabAdd" class="tab" onclick="showBusinessTab('add')">Add Return</button>
+            </div>
+
+            <!-- <div id="businessAddTab" class="hidden">
+                <div class="card">
+                    <h3 style="margin-bottom:25px;color:#333;">Add Customer Return Record</h3>
+                    <div class="two-column">
+                        <div>
+                            <div class="form-group"><label>Customer Name:</label><input type="text" id="customerName"
+                                    required></div>
+                            <div class="form-group"><label>Address:</label><textarea id="customerAddress"></textarea>
+                            </div>
+                            <div class="form-group"><label>Phone Number 1:</label><input type="tel" id="phone1"></div>
+                            <div class="form-group"><label>Phone Number 2(Optional)</label><input type="tel" id="phone2"></div>
+                            <div class="form-group"><label>WhatsApp Number(Optional)</label><input type="tel" id="whatsapp">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-group"><label>Return Details:</label><textarea
+                                    id="returnDetails"></textarea></div>
+                            <div class="form-group"><label>Item Details:</label><textarea id="itemDetails"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="addReturn()" id="addReturnBtn" style="margin-top:20px;">Add Return
+                        Record</button>
+                </div>
+            </div> -->
+
+            <div id="businessAddTab" class="hidden">
+    <div class="card">
+        <h3 style="margin-bottom:25px;color:#333;">Add Customer Return Record</h3>
+        <div class="two-column">
+            <div>
+                <div class="form-group"><label>Customer Name:</label><input type="text" id="customerName"
+                        required></div>
+                <div class="form-group"><label>Address:</label><textarea id="customerAddress"></textarea>
+                </div>
+                <div class="form-group"><label>Phone Number 1:</label><input type="tel" id="phone1"></div>
+                <div class="form-group"><label>Phone Number 2 (Optional):</label><input type="tel" id="phone2"></div>
+                <div class="form-group"><label>WhatsApp Number (Optional):</label><input type="tel" id="whatsapp">
+                </div>
+            </div>
+            <div>
+                <div class="form-group">
+                    <label>Status:</label>
+                    <select id="returnStatus" required>
+                        <option value="">Select Status</option>
+                        <option value="Returned">Returned</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Status Remark:</label><textarea
+                        id="returnDetails"></textarea></div>
+                <div class="form-group"><label>Item Details:</label><textarea id="itemDetails"></textarea>
+                </div>
+            </div>
+        </div>
+        <button class="btn" onclick="addReturn()" id="addReturnBtn" style="margin-top:20px;">Add Return
+            Record</button>
+    </div>
+</div>
+            <div id="businessSearchTab">
+                <div class="search-section">
+                    <h3 style="margin-bottom:20px;color:#333;">Search Customer Records</h3>
+                    <div class="search-form">
+                        <!-- ✅ Universal Search Box -->
+                        <div class="form-group" style="width:100%;">
+                            <label>Search:</label>
+                            <input type="text" id="universalSearch" placeholder="Search by name, phone, or WhatsApp"
+                                oninput="universalSearchRecords()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div id="searchResults">
+                        <p style="text-align:center;color:#666;font-style:italic;">Start typing to search records</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+            <div class="dashboard-nav">
+                <div class="logo">Returns Tracker - Admin</div>
+                <div class="user-info">
+                    <div class="user-avatar" style="background:#dc3545;">A</div>
+                    <div>
+                        <div style="font-weight:600;">Administrator</div>
+                        <div style="font-size:14px;color:#666;">System Admin</div>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div id="totalBusinesses" class="stat-number">-</div>
+                    <div class="stat-label">Total Businesses</div>
+                </div>
+                <div class="stat-card">
+                    <div id="totalReturns" class="stat-number">-</div>
+                    <div class="stat-label">Total Returns</div>
+                </div>
+                <div class="stat-card">
+                    <div id="activeBusinesses" class="stat-number">-</div>
+                    <div class="stat-label">Active Businesses</div>
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab active" onclick="showAdminTab('businesses')">Manage Businesses</button>
+                <button class="tab" onclick="showAdminTab('returns')">All Returns</button>
+            </div>
+            <div id="adminBusinessesTab">
+                <div class="card">
+                    <h3>Registered Businesses</h3>
+                    <div id="businessesList" class="loading">Loading businesses...</div>
+                </div>
+            </div>
+            <div id="adminReturnsTab" class="hidden">
+                <div class="card">
+                    <h3>All Customer Returns</h3>
+                    <div id="allReturnsList" class="loading">Loading returns...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+    </div>
+
+    <!-- Firebase & App Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
