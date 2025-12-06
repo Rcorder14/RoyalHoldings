@@ -58,7 +58,7 @@ async function initializeApp() {
             await loadData();
         } catch (err) {
             console.error("Init error:", err);
-            showAlert("Error loading data.", "error");
+            showAlert("Error loading data. Check internet.", "error");
         }
     }
 
@@ -75,17 +75,24 @@ async function initializeApp() {
 }
 
 async function loadData() {
-    const [bizSnap, retSnap, branchSnap, numSnap] = await Promise.all([
-        db.collection(COLLECTIONS.BUSINESSES).get(),
-        db.collection(COLLECTIONS.RETURNS).get(),
-        db.collection(COLLECTIONS.BRANCHES).get(),
-        db.collection(COLLECTIONS.BRANCH_NUMBERS).get()
-    ]);
+    // We try/catch inside here to ensure one failure doesn't stop everything
+    try {
+        const [bizSnap, retSnap, branchSnap, numSnap] = await Promise.all([
+            db.collection(COLLECTIONS.BUSINESSES).get(),
+            db.collection(COLLECTIONS.RETURNS).get(),
+            db.collection(COLLECTIONS.BRANCHES).get(),
+            db.collection(COLLECTIONS.BRANCH_NUMBERS).get()
+        ]);
 
-    businesses = bizSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    returns = retSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    branches = branchSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    branchNumbers = numSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        businesses = bizSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        returns = retSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        branches = branchSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        branchNumbers = numSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        console.log(`Loaded: ${branches.length} branches, ${branchNumbers.length} numbers.`); // Debug log
+    } catch (e) {
+        console.error("Error loading data from Firestore:", e);
+    }
 }
 
 /* -----------------------------
@@ -234,8 +241,8 @@ async function addReturn() {
     const returnDetails = document.getElementById("returnDetails").value.trim();
     const itemDetails = document.getElementById("itemDetails").value.trim();
 
-    if (!customerName || !customerAddress || !phone1 || !returnStatus || !returnDetails || !itemDetails) {
-        return showAlert("Please fill all required fields, including Status.", "error");
+    if (!customerName || !phone1 || !returnStatus) {
+        return showAlert("Customer Name, Phone 1 and Status are required.", "error");
     }
     
     const newReturn = {
@@ -261,7 +268,7 @@ async function addReturn() {
 }
 
 /* -----------------------------
-   RENDER LOGIC (NEW CARD UI)
+   RENDER LOGIC
 ------------------------------ */
 function universalSearchRecords() {
     const query = document.getElementById("universalSearch").value.trim().toLowerCase();
@@ -318,15 +325,15 @@ function universalSearchRecords() {
                     </div>
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-map-marker-alt"></i> Address</span>
-                        <div class="info-value">${r.customerAddress}</div>
+                        <div class="info-value">${r.customerAddress || '-'}</div>
                     </div>
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-box"></i> Items</span>
-                        <div class="info-value">${r.itemDetails}</div>
+                        <div class="info-value">${r.itemDetails || '-'}</div>
                     </div>
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-comment-dots"></i> Remark</span>
-                        <div class="info-value">${r.statusRemark || r.returnDetails}</div>
+                        <div class="info-value">${r.statusRemark || r.returnDetails || '-'}</div>
                     </div>
                 </div>
             </div>
@@ -475,10 +482,33 @@ async function deleteReturn(id) {
 }
 
 /* -----------------------------
-   Branches & Numbers
+   Branches & Numbers (FIXED UPLOAD LOGIC)
 ------------------------------ */
 
-// 1. Admin Upload Branches
+// Helper to Upload large data in chunks (Firestore limit is 500 writes per batch)
+async function uploadInChunks(collectionName, data, mapFn) {
+    const BATCH_SIZE = 400; // Safe limit
+    const total = data.length;
+    let processed = 0;
+
+    // Split data into chunks
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+        const chunk = data.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+
+        chunk.forEach(item => {
+            const docRef = db.collection(collectionName).doc();
+            // Use map function if provided, otherwise raw item
+            batch.set(docRef, mapFn ? mapFn(item) : item);
+        });
+
+        await batch.commit();
+        processed += chunk.length;
+        console.log(`Uploaded ${processed}/${total} items to ${collectionName}`);
+    }
+}
+
+// 1. Admin Upload Branches (Fixed Key Matching)
 async function handleBranchUpload() {
     const fileInput = document.getElementById("branchJsonFile");
     const file = fileInput.files[0];
@@ -489,29 +519,31 @@ async function handleBranchUpload() {
         try {
             const jsonData = JSON.parse(e.target.result);
             if (!Array.isArray(jsonData) || jsonData.length === 0) return showAlert("Invalid JSON file.", "error");
-            if (!confirm(`Found ${jsonData.length} records. Upload now?`)) return;
+            
+            if (!confirm(`Found ${jsonData.length} records. This might take a moment. Upload now?`)) return;
 
             document.getElementById("uploadBtn").textContent = "Uploading...";
             document.getElementById("uploadBtn").disabled = true;
 
-            const batch = db.batch();
-            jsonData.forEach(row => {
-                const docRef = db.collection(COLLECTIONS.BRANCHES).doc();
-                batch.set(docRef, {
-                    city: row.CITY || "",
-                    district: row.DISTRICT || "",
-                    branch: row.BRANCH || ""
-                });
+            // FIX 1: Handle multiple case variations for keys (CITY, City, city)
+            const mapBranchData = (row) => ({
+                city: row.CITY || row.City || row.city || "",
+                district: row.DISTRICT || row.District || row.district || "",
+                branch: row.BRANCH || row.Branch || row.branch || ""
             });
-            await batch.commit();
+
+            // FIX 2: Use chunking to avoid 500-limit crash
+            await uploadInChunks(COLLECTIONS.BRANCHES, jsonData, mapBranchData);
             
+            // Reload local data
             const snap = await db.collection(COLLECTIONS.BRANCHES).get();
             branches = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            showAlert("Branches uploaded successfully!", "success");
+            showAlert(`Success! ${jsonData.length} branches uploaded.`, "success");
             fileInput.value = "";
         } catch (error) {
-            showAlert("Error uploading file.", "error");
+            console.error(error);
+            showAlert("Error uploading file. Check console.", "error");
         } finally {
             document.getElementById("uploadBtn").textContent = "Upload JSON Data";
             document.getElementById("uploadBtn").disabled = false;
@@ -520,7 +552,7 @@ async function handleBranchUpload() {
     reader.readAsText(file);
 }
 
-// 2. Business Search Branches (LABLED GRID UI)
+// 2. Business Search Branches
 function searchBranches() {
     const query = document.getElementById("branchSearchInput").value.trim().toLowerCase();
     const container = document.getElementById("branchSearchResults");
@@ -563,7 +595,7 @@ function searchBranches() {
     }
 }
 
-// 3. Admin Upload Numbers
+// 3. Admin Upload Numbers (Fixed Chunking)
 async function handleNumbersUpload() {
     const fileInput = document.getElementById("numberJsonFile");
     const file = fileInput.files[0];
@@ -574,24 +606,22 @@ async function handleNumbersUpload() {
         try {
             const jsonData = JSON.parse(e.target.result);
             if (!Array.isArray(jsonData) || jsonData.length === 0) return showAlert("Invalid JSON file.", "error");
+            
             if (!confirm(`Found ${jsonData.length} numbers. Upload now?`)) return;
 
             document.getElementById("uploadNumBtn").textContent = "Uploading...";
             document.getElementById("uploadNumBtn").disabled = true;
 
-            const batch = db.batch();
-            jsonData.forEach(row => {
-                const docRef = db.collection(COLLECTIONS.BRANCH_NUMBERS).doc();
-                batch.set(docRef, row);
-            });
-            await batch.commit();
+            // FIX: Use chunking for numbers too
+            await uploadInChunks(COLLECTIONS.BRANCH_NUMBERS, jsonData, null);
 
             const snap = await db.collection(COLLECTIONS.BRANCH_NUMBERS).get();
             branchNumbers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            showAlert("Numbers uploaded successfully!", "success");
+            showAlert(`Success! ${jsonData.length} numbers uploaded.`, "success");
             fileInput.value = "";
         } catch (error) {
+            console.error(error);
             showAlert("Error uploading file.", "error");
         } finally {
             document.getElementById("uploadNumBtn").textContent = "Upload Numbers Data";
@@ -619,8 +649,9 @@ function searchBranchNumbers() {
         container.innerHTML = "<div class='loading'>No numbers found.</div>";
     } else {
         container.innerHTML = results.map(r => {
-            const bName = r.branch || r.Branch || r.name || "Branch";
-            const bNum = r.number || r.Number || r.phone || "No Number";
+            // Flexible matching for different JSON key names
+            const bName = r.branch || r.Branch || r.name || r.Name || "Branch";
+            const bNum = r.number || r.Number || r.phone || r.Phone || "No Number";
             
             return `
             <div class="result-card" style="border-left-color: #7c3aed;">
