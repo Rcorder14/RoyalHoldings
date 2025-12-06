@@ -4,21 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Returns Tracker</title>
+    <title>Royal Holdings</title>
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <body>
     <div class="container">
         <div class="header">
-            <h1>Customer Returns Tracker</h1>
-            <p>Professional return management for small businesses</p>
+            <h1>Royal Holdings Data Connect</h1>
+            <p>Minimize Risk, Maximize Delivery Success</p>
         </div>
 
         <div id="setupNotice"></div>
 
-        <!-- Login Screen -->
         <div id="loginScreen">
             <div class="card auth-card">
                 <h2 style="text-align:center;margin-bottom:30px;color:#333;">Sign In</h2>
@@ -48,7 +47,6 @@
             </div>
         </div>
 
-        <!-- Registration Screen -->
         <div id="registerScreen" class="hidden">
             <div class="card auth-card">
                 <h2 style="text-align:center;margin-bottom:30px;color:#333;">Business Registration</h2>
@@ -83,10 +81,9 @@
             </div>
         </div>
 
-        <!-- Business Dashboard -->
         <div id="businessDashboard" class="hidden">
             <div class="dashboard-nav">
-                <div class="logo">Returns Tracker</div>
+                <div class="logo">Business User</div>
                 <div class="user-info">
                     <div class="user-avatar" id="userAvatar">B</div>
                     <div>
@@ -96,75 +93,53 @@
                     <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
                 </div>
             </div>
+            
             <div class="tabs">
                 <button id="tabSearch" class="tab" onclick="showBusinessTab('search')">Search Records</button>
                 <button id="tabAdd" class="tab" onclick="showBusinessTab('add')">Add Return</button>
+                <button id="tabBranch" class="tab" onclick="showBusinessTab('branches')">Branch Search</button>
+                <button id="tabNumbers" class="tab" onclick="showBusinessTab('numbers')">Branch Numbers</button> 
             </div>
 
-            <!-- <div id="businessAddTab" class="hidden">
+            <div id="businessAddTab" class="hidden">
                 <div class="card">
-                    <h3 style="margin-bottom:25px;color:#333;">Add Customer Return Record</h3>
+                    <h3 style="margin-bottom:25px;color:#333;">Add Customer Records</h3>
                     <div class="two-column">
                         <div>
                             <div class="form-group"><label>Customer Name:</label><input type="text" id="customerName"
                                     required></div>
                             <div class="form-group"><label>Address:</label><textarea id="customerAddress"></textarea>
                             </div>
-                            <div class="form-group"><label>Phone Number 1:</label><input type="tel" id="phone1"></div>
-                            <div class="form-group"><label>Phone Number 2(Optional)</label><input type="tel" id="phone2"></div>
-                            <div class="form-group"><label>WhatsApp Number(Optional)</label><input type="tel" id="whatsapp">
+                            <div class="form-group"><label>1st Contact Number:</label><input type="tel" id="phone1"></div>
+                            <div class="form-group"><label>2nd Contact Number (Optional):</label><input type="tel" id="phone2"></div>
+                            <div class="form-group"><label>WhatsApp Number (Optional):</label><input type="tel" id="whatsapp">
                             </div>
                         </div>
                         <div>
-                            <div class="form-group"><label>Return Details:</label><textarea
+                            <div class="form-group">
+                                <label>Status:</label>
+                                <select id="returnStatus" required>
+                                    <option value="">Select Status</option>
+                                    <option value="Returned">Returned</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Status Remark:</label><textarea
                                     id="returnDetails"></textarea></div>
                             <div class="form-group"><label>Item Details:</label><textarea id="itemDetails"></textarea>
                             </div>
                         </div>
                     </div>
-                    <button class="btn" onclick="addReturn()" id="addReturnBtn" style="margin-top:20px;">Add Return
+                    <button class="btn" onclick="addReturn()" id="addReturnBtn" style="margin-top:20px;">Add Data
                         Record</button>
                 </div>
-            </div> -->
+            </div>
 
-            <div id="businessAddTab" class="hidden">
-    <div class="card">
-        <h3 style="margin-bottom:25px;color:#333;">Add Customer Return Record</h3>
-        <div class="two-column">
-            <div>
-                <div class="form-group"><label>Customer Name:</label><input type="text" id="customerName"
-                        required></div>
-                <div class="form-group"><label>Address:</label><textarea id="customerAddress"></textarea>
-                </div>
-                <div class="form-group"><label>Phone Number 1:</label><input type="tel" id="phone1"></div>
-                <div class="form-group"><label>Phone Number 2 (Optional):</label><input type="tel" id="phone2"></div>
-                <div class="form-group"><label>WhatsApp Number (Optional):</label><input type="tel" id="whatsapp">
-                </div>
-            </div>
-            <div>
-                <div class="form-group">
-                    <label>Status:</label>
-                    <select id="returnStatus" required>
-                        <option value="">Select Status</option>
-                        <option value="Returned">Returned</option>
-                        <option value="Cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>Status Remark:</label><textarea
-                        id="returnDetails"></textarea></div>
-                <div class="form-group"><label>Item Details:</label><textarea id="itemDetails"></textarea>
-                </div>
-            </div>
-        </div>
-        <button class="btn" onclick="addReturn()" id="addReturnBtn" style="margin-top:20px;">Add Return
-            Record</button>
-    </div>
-</div>
             <div id="businessSearchTab">
                 <div class="search-section">
                     <h3 style="margin-bottom:20px;color:#333;">Search Customer Records</h3>
                     <div class="search-form">
-                        <!-- ✅ Universal Search Box -->
                         <div class="form-group" style="width:100%;">
                             <label>Search:</label>
                             <input type="text" id="universalSearch" placeholder="Search by name, phone, or WhatsApp"
@@ -178,12 +153,47 @@
                     </div>
                 </div>
             </div>
+
+            <div id="businessBranchTab" class="hidden">
+                <div class="search-section">
+                    <h3 style="margin-bottom:20px;color:#333;">Check Branch Availability</h3>
+                    <div class="search-form">
+                        <div class="form-group" style="width:100%;">
+                            <label>Enter City Name:</label>
+                            <input type="text" id="branchSearchInput" placeholder="Type city name (e.g. Kandy)"
+                                oninput="searchBranches()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div id="branchSearchResults">
+                        <p style="text-align:center;color:#666;font-style:italic;">Results will appear here...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="businessNumbersTab" class="hidden">
+                <div class="search-section">
+                    <h3 style="margin-bottom:20px;color:#333;">Search Branch Numbers</h3>
+                    <div class="search-form">
+                        <div class="form-group" style="width:100%;">
+                            <label>Enter Branch Name:</label>
+                            <input type="text" id="numberSearchInput" placeholder="Type branch name (e.g. Kandy)"
+                                oninput="searchBranchNumbers()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div id="numberSearchResults">
+                        <p style="text-align:center;color:#666;font-style:italic;">Results will appear here...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Admin Dashboard -->
         <div id="adminDashboard" class="hidden">
             <div class="dashboard-nav">
-                <div class="logo">Returns Tracker - Admin</div>
+                <div class="logo">Royal Holdings - Admin</div>
                 <div class="user-info">
                     <div class="user-avatar" style="background:#dc3545;">A</div>
                     <div>
@@ -207,33 +217,61 @@
                     <div class="stat-label">Active Businesses</div>
                 </div>
             </div>
+
             <div class="tabs">
                 <button class="tab active" onclick="showAdminTab('businesses')">Manage Businesses</button>
                 <button class="tab" onclick="showAdminTab('returns')">All Returns</button>
+                <button class="tab" onclick="showAdminTab('branches')">Upload Branches</button>
+                <button class="tab" onclick="showAdminTab('numbers')">Upload Numbers</button> 
             </div>
+
             <div id="adminBusinessesTab">
                 <div class="card">
                     <h3>Registered Businesses</h3>
                     <div id="businessesList" class="loading">Loading businesses...</div>
                 </div>
             </div>
+
             <div id="adminReturnsTab" class="hidden">
                 <div class="card">
                     <h3>All Customer Returns</h3>
                     <div id="allReturnsList" class="loading">Loading returns...</div>
                 </div>
             </div>
+
+            <div id="adminBranchesTab" class="hidden">
+                <div class="card">
+                    <h3>Upload Branch Data (JSON)</h3>
+                    <p style="color:#666; margin-bottom:20px;">Upload the JSON file containing City, District, and Branch data.</p>
+                    
+                    <div style="border: 2px dashed #ccc; padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
+                        <input type="file" id="branchJsonFile" accept=".json" style="margin-bottom: 15px;">
+                        <br>
+                        <button id="uploadBtn" class="btn" onclick="handleBranchUpload()">Upload JSON Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminNumbersTab" class="hidden">
+                <div class="card">
+                    <h3>Upload Branch Numbers (JSON)</h3>
+                    <p style="color:#666; margin-bottom:20px;">Upload the JSON file containing Branch Names and Phone Numbers.</p>
+                    
+                    <div style="border: 2px dashed #ccc; padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
+                        <input type="file" id="numberJsonFile" accept=".json" style="margin-bottom: 15px;">
+                        <br>
+                        <button id="uploadNumBtn" class="btn" onclick="handleNumbersUpload()">Upload Numbers Data</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Alerts -->
         <div id="alertContainer"></div>
     </div>
 
-    <!-- Firebase & App Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>

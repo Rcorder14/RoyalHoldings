@@ -1,7 +1,7 @@
 /* -----------------------------
    Firebase Setup
 ------------------------------ */
-  const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyCCRKbIKfPGZ6s6qP9i2JsQ_mCdk_iSIho",
   authDomain: "royal-holding.firebaseapp.com",
   projectId: "royal-holding",
@@ -29,11 +29,15 @@ try {
 let currentUser = null;
 let businesses = [];
 let returns = [];
+let branches = [];
+let branchNumbers = [];
 
 const COLLECTIONS = {
     BUSINESSES: "businesses",
     RETURNS: "returns",
-    ADMIN: "admin"
+    ADMIN: "admin",
+    BRANCHES: "branches",
+    BRANCH_NUMBERS: "branch_numbers"
 };
 
 /* -----------------------------
@@ -46,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initializeApp() {
     hideAll();
     const notice = document.getElementById("setupNotice");
-    notice.innerHTML = "<p style='text-align:center;color:#666;'>Loading...</p>";
+    notice.innerHTML = "<div class='loading'>Loading system data...</div>";
     notice.style.display = "block";
 
     if (isFirebaseConfigured) {
@@ -71,11 +75,17 @@ async function initializeApp() {
 }
 
 async function loadData() {
-    const businessesSnapshot = await db.collection(COLLECTIONS.BUSINESSES).get();
-    businesses = businessesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const [bizSnap, retSnap, branchSnap, numSnap] = await Promise.all([
+        db.collection(COLLECTIONS.BUSINESSES).get(),
+        db.collection(COLLECTIONS.RETURNS).get(),
+        db.collection(COLLECTIONS.BRANCHES).get(),
+        db.collection(COLLECTIONS.BRANCH_NUMBERS).get()
+    ]);
 
-    const returnsSnapshot = await db.collection(COLLECTIONS.RETURNS).get();
-    returns = returnsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    businesses = bizSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    returns = retSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    branches = branchSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    branchNumbers = numSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /* -----------------------------
@@ -85,10 +95,12 @@ function showLogin() {
     hideAll();
     document.getElementById("loginScreen").classList.remove("hidden");
 }
+
 function showRegister() {
     hideAll();
     document.getElementById("registerScreen").classList.remove("hidden");
 }
+
 function hideAll() {
     ["loginScreen", "registerScreen", "businessDashboard", "adminDashboard"]
         .forEach(id => document.getElementById(id).classList.add("hidden"));
@@ -147,53 +159,17 @@ async function handleRegister() {
     const phone = document.getElementById("regPhone").value.trim();
     const password = document.getElementById("regPassword").value;
 
-    // ✅ Check required fields
     if (!businessName || !contactName || !email || !phone || !password) {
         return showAlert("Fill all fields", "error");
     }
 
-    // ✅ Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return showAlert("Enter a valid email address", "error");
-    }
-
-    // ✅ Block disposable/temporary emails
-    const disposableDomains = [
-        "mailinator.com", "tempmail.com", "10minutemail.com",
-        "guerrillamail.com", "yopmail.com", "trashmail.com"
-    ];
-
-    const emailDomain = email.split("@")[1].toLowerCase();
-    if (disposableDomains.includes(emailDomain)) {
-        return showAlert("Temporary email addresses are not allowed", "error");
-    }
-
-
-    // ✅ Validate phone number (10 digits only)
-    if (!/^\d{10}$/.test(phone)) {
-        return showAlert("Phone number must be exactly 10 digits", "error");
-    }
-
-    // ✅ Validate password length (> 8 characters)
-    if (password.length < 8) {
-        return showAlert("Password must be at least 8 characters", "error");
-    }
-
-    // ✅ Check for duplicate email
     if (businesses.find(b => b.email === email)) {
         return showAlert("Email already exists", "error");
     }
 
-    // ✅ Create new business
     const newBusiness = {
-        businessName,
-        contactName,
-        email,
-        phone,
-        password,
-        status: "active",
-        registeredDate: new Date().toISOString()
+        businessName, contactName, email, phone, password,
+        status: "active", registeredDate: new Date().toISOString()
     };
 
     try {
@@ -208,7 +184,6 @@ async function handleRegister() {
         showAlert("Registration failed", "error");
     }
 }
-
 
 function logout() {
     currentUser = null;
@@ -228,22 +203,26 @@ function showBusinessDashboard() {
 }
 
 function showBusinessTab(tab) {
-    document.getElementById("businessAddTab").classList.add("hidden");
-    document.getElementById("businessSearchTab").classList.add("hidden");
-
-    document.getElementById("tabSearch").classList.remove("active");
-    document.getElementById("tabAdd").classList.remove("active");
+    ["businessAddTab", "businessSearchTab", "businessBranchTab", "businessNumbersTab"]
+        .forEach(id => document.getElementById(id).classList.add("hidden"));
+    
+    ["tabSearch", "tabAdd", "tabBranch", "tabNumbers"]
+        .forEach(id => document.getElementById(id).classList.remove("active"));
 
     if (tab === "add") {
         document.getElementById("businessAddTab").classList.remove("hidden");
         document.getElementById("tabAdd").classList.add("active");
-    } else {
+    } else if (tab === "search") {
         document.getElementById("businessSearchTab").classList.remove("hidden");
         document.getElementById("tabSearch").classList.add("active");
+    } else if (tab === "branches") {
+        document.getElementById("businessBranchTab").classList.remove("hidden");
+        document.getElementById("tabBranch").classList.add("active");
+    } else if (tab === "numbers") {
+        document.getElementById("businessNumbersTab").classList.remove("hidden");
+        document.getElementById("tabNumbers").classList.add("active");
     }
 }
-
-// 
 
 async function addReturn() {
     const customerName = document.getElementById("customerName").value.trim();
@@ -251,40 +230,19 @@ async function addReturn() {
     const phone1 = document.getElementById("phone1").value.trim();
     const phone2 = document.getElementById("phone2").value.trim();
     const whatsapp = document.getElementById("whatsapp").value.trim();
-
-    // 👇 UPDATED: Read ONLY the single Status value
     const returnStatus = document.getElementById("returnStatus").value;
-    // Removed: const returnOutcome = document.getElementById("returnOutcome").value;
-
     const returnDetails = document.getElementById("returnDetails").value.trim();
     const itemDetails = document.getElementById("itemDetails").value.trim();
 
-    // UPDATED: Check for all required fields, only requiring returnStatus
     if (!customerName || !customerAddress || !phone1 || !returnStatus || !returnDetails || !itemDetails) {
         return showAlert("Please fill all required fields, including Status.", "error");
     }
     
-    // KEEP: Phone number validation
-    if (!/^\d{10}$/.test(phone1)) return showAlert("Phone Number 1 must be exactly 10 digits.", "error");
-    if (phone2 && !/^\d{10}$/.test(phone2)) return showAlert("If provided, Phone Number 2 must be exactly 10 digits.", "error");
-    if (whatsapp && !/^\d+$/.test(whatsapp)) return showAlert("If provided, WhatsApp Number must contain only digits.", "error");
-
-
     const newReturn = {
         businessId: currentUser.id,
         businessName: currentUser.businessName,
-        customerName,
-        customerAddress,
-        phone1,
-        phone2: phone2 || null,
-        whatsapp: whatsapp || null,
-        
-        // 👇 UPDATED: Save only the single Status field
-        returnStatus,
-        // Removed: returnOutcome,
-        
-        returnDetails,
-        itemDetails,
+        customerName, customerAddress, phone1, phone2: phone2 || null, whatsapp: whatsapp || null,
+        returnStatus, statusRemark: returnDetails, returnDetails, itemDetails,
         dateAdded: new Date().toISOString()
     };
 
@@ -293,12 +251,8 @@ async function addReturn() {
         newReturn.id = docRef.id;
         returns.push(newReturn);
 
-        // Reset form fields
-        document.querySelectorAll("#businessAddTab input, #businessAddTab textarea")
-            .forEach(el => el.value = "");
-        // Reset dropdown
+        document.querySelectorAll("#businessAddTab input, #businessAddTab textarea").forEach(el => el.value = "");
         document.getElementById("returnStatus").value = "";
-
         showAlert("Return record added successfully", "success");
     } catch (error) {
         console.error("Error adding return:", error);
@@ -306,96 +260,80 @@ async function addReturn() {
     }
 }
 
-
-// function universalSearchRecords() {
-//     const query = document.getElementById("universalSearch").value.trim().toLowerCase();
-//     const container = document.getElementById("searchResults");
-
-//     if (!query) {
-//         container.innerHTML = "<p style='text-align:center;color:#666;font-style:italic;'>Start typing to search records</p>";
-//         return;
-//     }
-
-//     // 🔥 Now includes all businesses, not just current user
-//     let results = returns;
-
-//     results = results.filter(r =>
-//         (r.customerName && r.customerName.toLowerCase().includes(query)) ||
-//         (r.customerAddress && r.customerAddress.toLowerCase().includes(query)) ||
-//         (r.phone1 && r.phone1.includes(query)) ||
-//         (r.phone2 && r.phone2.includes(query)) ||
-//         (r.whatsapp && r.whatsapp.includes(query)) ||
-//         (r.returnDetails && r.returnDetails.toLowerCase().includes(query)) ||
-//         (r.itemDetails && r.itemDetails.toLowerCase().includes(query)) ||
-//         (r.businessName && r.businessName.toLowerCase().includes(query)) // 🔥 can also search by business
-//     );
-
-//     if (!results.length) {
-//         container.innerHTML = "<p style='text-align:center;color:#999;'>No records found</p>";
-//     } else {
-//         container.innerHTML = results.map(r => `
-//             <div class="result-card" style="border-bottom:1px solid #eee;padding:10px 0;text-align:left;">
-//                 <p><b>Customer Name:</b> ${r.customerName}</p>
-//                 <p><b>Business Name:</b> ${r.businessName}</p>
-//                 <p><b>Address:</b> ${r.customerAddress}</p>
-//                 <p><b>Phone 1:</b> ${r.phone1}</p>
-//                 <p><b>Phone 2:</b> ${r.phone2}</p>
-//                 <p><b>WhatsApp:</b> ${r.whatsapp || "-"}</p>
-//                 <p><b>Return Details:</b> ${r.returnDetails}</p>
-//                 <p><b>Item Details:</b> ${r.itemDetails}</p>
-//                 <p><b>Added on:</b> ${new Date(r.dateAdded).toLocaleString()}</p>
-//             </div>
-//         `).join("");
-//     }
-// }
-
+/* -----------------------------
+   RENDER LOGIC (NEW CARD UI)
+------------------------------ */
 function universalSearchRecords() {
     const query = document.getElementById("universalSearch").value.trim().toLowerCase();
     const container = document.getElementById("searchResults");
 
     if (!query) {
-        container.innerHTML = "<p style='text-align:center;color:#666;font-style:italic;'>Start typing to search records</p>";
+        container.innerHTML = "<div class='loading'>Start typing to search records...</div>";
         return;
     }
 
-    // Includes all businesses
-    let results = returns;
-
-    results = results.filter(r =>
+    let results = returns.filter(r =>
         (r.customerName && r.customerName.toLowerCase().includes(query)) ||
         (r.customerAddress && r.customerAddress.toLowerCase().includes(query)) ||
         (r.phone1 && r.phone1.includes(query)) ||
         (r.phone2 && r.phone2.includes(query)) ||
         (r.whatsapp && r.whatsapp.includes(query)) ||
-        // 👇 EDITED: Robust search filter for Status Remark (new key) or Return Details (old key)
         ((r.statusRemark || r.returnDetails) && (r.statusRemark || r.returnDetails).toLowerCase().includes(query)) ||
         (r.itemDetails && r.itemDetails.toLowerCase().includes(query)) ||
         (r.businessName && r.businessName.toLowerCase().includes(query))
     );
 
     if (!results.length) {
-        container.innerHTML = "<p style='text-align:center;color:#999;'>No records found</p>";
+        container.innerHTML = "<div class='loading'>No records found</div>";
     } else {
-        container.innerHTML = results.map(r => `
-            <div class="result-card" style="border-bottom:1px solid #eee;padding:10px 0;text-align:left;">
-                <p><b>Customer Name:</b> ${r.customerName}</p>
-                <p><b>Business Name:</b> ${r.businessName}</p>
-                <p><b>Address:</b> ${r.customerAddress}</p>
-                <p><b>Phone 1:</b> ${r.phone1}</p>
-                <p><b>Phone 2:</b> ${r.phone2 || "-"}</p>
-                <p><b>WhatsApp:</b> ${r.whatsapp || "-"}</p>
-                
-                <p><b>Status:</b> <span style="font-weight:700; color:${r.returnStatus === 'Cancelled' ? '#c00080ff' : '#dd0404ff'};">${r.returnStatus}</span></p>
+        container.innerHTML = results.map(r => {
+            let cssClass = 'status-other';
+            if (r.returnStatus === 'Cancelled') cssClass = 'status-cancelled';
+            else if (r.returnStatus === 'Returned') cssClass = 'status-returned';
 
-                <p><b>Status Remark:</b> ${r.statusRemark || r.returnDetails}</p>
+            const formattedDate = new Date(r.dateAdded).toLocaleDateString();
+
+            return `
+            <div class="result-card ${cssClass}">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-user-circle" style="color:#667eea"></i>
+                        ${r.customerName}
+                    </div>
+                    <span class="badge ${cssClass}">${r.returnStatus}</span>
+                </div>
                 
-                <p><b>Item Details:</b> ${r.itemDetails}</p>
-                <p><b>Added on:</b> ${new Date(r.dateAdded).toLocaleString()}</p>
+                <div class="card-subtitle" style="margin-bottom:15px;">
+                    Business: ${r.businessName}
+                </div>
+
+                <div class="card-grid">
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-phone"></i> Phone</span>
+                        <div class="info-value">${r.phone1}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="far fa-calendar-alt"></i> Date</span>
+                        <div class="info-value">${formattedDate}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-map-marker-alt"></i> Address</span>
+                        <div class="info-value">${r.customerAddress}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-box"></i> Items</span>
+                        <div class="info-value">${r.itemDetails}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-comment-dots"></i> Remark</span>
+                        <div class="info-value">${r.statusRemark || r.returnDetails}</div>
+                    </div>
+                </div>
             </div>
-        `).join("");
+            `;
+        }).join("");
     }
 }
-
 
 /* -----------------------------
    Admin Dashboard
@@ -414,9 +352,9 @@ function updateAdminStats() {
 }
 
 function showAdminTab(tab) {
-    document.getElementById("adminBusinessesTab").classList.add("hidden");
-    document.getElementById("adminReturnsTab").classList.add("hidden");
-
+    ["adminBusinessesTab", "adminReturnsTab", "adminBranchesTab", "adminNumbersTab"]
+        .forEach(id => document.getElementById(id).classList.add("hidden"));
+    
     const tabs = document.querySelectorAll("#adminDashboard .tabs .tab");
     tabs.forEach(t => t.classList.remove("active"));
 
@@ -424,44 +362,50 @@ function showAdminTab(tab) {
         document.getElementById("adminBusinessesTab").classList.remove("hidden");
         tabs[0].classList.add("active");
         loadBusinessesList();
-    } else {
+    } else if (tab === "returns") {
         document.getElementById("adminReturnsTab").classList.remove("hidden");
         tabs[1].classList.add("active");
         loadReturnsList();
+    } else if (tab === "branches") {
+        document.getElementById("adminBranchesTab").classList.remove("hidden");
+        tabs[2].classList.add("active");
+    } else if (tab === "numbers") {
+        document.getElementById("adminNumbersTab").classList.remove("hidden");
+        tabs[3].classList.add("active");
     }
 }
 
 /* -----------------------------
-   Admin: Manage Businesses
+   Admin Functions
 ------------------------------ */
 async function loadBusinessesList() {
     const container = document.getElementById("businessesList");
-    container.innerHTML = "<p style='text-align:center;color:#666;'>Loading businesses...</p>";
+    container.innerHTML = "<div class='loading'>Loading businesses...</div>";
 
     try {
         const snapshot = await db.collection(COLLECTIONS.BUSINESSES).get();
         businesses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         if (!businesses.length) {
-            container.innerHTML = "<p style='text-align:center;color:#999;'>No businesses found</p>";
+            container.innerHTML = "<div class='loading'>No businesses found</div>";
             return;
         }
 
         container.innerHTML = businesses.map(b => `
-            <div class="result-card" style="border-bottom:1px solid #eee;padding:12px 0;display:flex;justify-content:space-between;align-items:flex-start;text-align:left;">
-                <div style="flex:1;">
-                    <p><b>Business Name:</b> ${b.businessName}</p>
-                    <p><b>Contact Person:</b> ${b.contactName}</p>
-                    <p><b>Email:</b> ${b.email}</p>
-                    <p><b>Phone:</b> ${b.phone}</p>
-                    <p><b>Status:</b> ${b.status}</p>
+            <div class="result-card" style="border-left-color: #3b82f6;">
+                <div class="card-header">
+                    <div class="card-title">${b.businessName}</div>
+                    <button class="btn btn-small btn-danger" onclick="deleteBusiness('${b.id}')">Delete</button>
                 </div>
-                <button class="btn btn-small btn-danger" onclick="deleteBusiness('${b.id}')">Delete</button>
+                <div class="card-grid">
+                    <div class="info-item"><span class="info-label">Contact</span>${b.contactName}</div>
+                    <div class="info-item"><span class="info-label">Phone</span>${b.phone}</div>
+                    <div class="info-item"><span class="info-label">Email</span>${b.email}</div>
+                </div>
             </div>
         `).join("");
     } catch (err) {
-        console.error("Error loading businesses:", err);
-        container.innerHTML = "<p style='color:red;'>Failed to load businesses.</p>";
+        container.innerHTML = "<div class='loading'>Failed to load businesses.</div>";
     }
 }
 
@@ -474,86 +418,51 @@ async function deleteBusiness(id) {
         updateAdminStats();
         loadBusinessesList();
     } catch (err) {
-        console.error("Error deleting business:", err);
         showAlert("Failed to delete business", "error");
     }
 }
 
-/* -----------------------------
-   Admin: All Returns
------------------------------- */
-// async function loadReturnsList() {
-//     const container = document.getElementById("allReturnsList");
-//     container.innerHTML = "<p style='text-align:center;color:#666;'>Loading returns...</p>";
-
-//     try {
-//         const snapshot = await db.collection(COLLECTIONS.RETURNS).get();
-//         returns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-//         if (!returns.length) {
-//             container.innerHTML = "<p style='text-align:center;color:#999;'>No returns found</p>";
-//             return;
-//         }
-
-//         container.innerHTML = returns.map(r => `
-//             <div class="result-card" style="border-bottom:1px solid #eee;padding:12px 0;display:flex;justify-content:space-between;align-items:flex-start;text-align:left;">
-//                 <div style="flex:1;">
-//                     <p><b>Customer Name:</b> ${r.customerName}</p>
-//                     <p><b>Business Name:</b> ${r.businessName}</p>
-//                     <p><b>Address:</b> ${r.customerAddress}</p>
-//                     <p><b>Phone 1:</b> ${r.phone1} | <b>Phone 2:</b> ${r.phone2} | <b>WhatsApp:</b> ${r.whatsapp || "-"}</p>
-//                     <p><b>Return Details:</b> ${r.returnDetails}</p>
-//                     <p><b>Item Details:</b> ${r.itemDetails}</p>
-//                     <p><b>Added on:</b> ${new Date(r.dateAdded).toLocaleString()}</p>
-//                 </div>
-//                 <button class="btn btn-small btn-danger" onclick="deleteReturn('${r.id}')">Delete</button>
-//             </div>
-//         `).join("");
-//     } catch (err) {
-//         console.error("Error loading returns:", err);
-//         container.innerHTML = "<p style='color:red;'>Failed to load returns.</p>";
-//     }
-// }
-
 async function loadReturnsList() {
     const container = document.getElementById("allReturnsList");
-    container.innerHTML = "<p style='text-align:center;color:#666;'>Loading returns...</p>";
+    container.innerHTML = "<div class='loading'>Loading returns...</div>";
 
     try {
         const snapshot = await db.collection(COLLECTIONS.RETURNS).get();
         returns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         if (!returns.length) {
-            container.innerHTML = "<p style='text-align:center;color:#999;'>No returns found</p>";
+            container.innerHTML = "<div class='loading'>No returns found</div>";
             return;
         }
 
-        container.innerHTML = returns.map(r => `
-            <div class="result-card" style="border-bottom:1px solid #eee;padding:12px 0;display:flex;justify-content:space-between;align-items:flex-start;text-align:left;">
-                <div style="flex:1;">
-                    <p><b>Customer Name:</b> ${r.customerName}</p>
-                    <p><b>Business Name:</b> ${r.businessName}</p>
-                    <p><b>Address:</b> ${r.customerAddress}</p>
-                    <p><b>Phone 1:</b> ${r.phone1} | <b>Phone 2:</b> ${r.phone2 || "-"} | <b>WhatsApp:</b> ${r.whatsapp || "-"}</p>
-                    
-                    <p><b>Status:</b> <span style="font-weight:700; color:${r.returnStatus === 'Cancelled' ? '#dc3545' : '#28a745'};">${r.returnStatus}</span></p>
+        container.innerHTML = returns.map(r => {
+             let cssClass = 'status-other';
+             if (r.returnStatus === 'Cancelled') cssClass = 'status-cancelled';
+             else if (r.returnStatus === 'Returned') cssClass = 'status-returned';
 
-                    <p><b>Status Remark:</b> ${r.statusRemark || r.returnDetails}</p>
-
-                    <p><b>Item Details:</b> ${r.itemDetails}</p>
-                    <p><b>Added on:</b> ${new Date(r.dateAdded).toLocaleString()}</p>
+            return `
+            <div class="result-card ${cssClass}">
+                <div class="card-header">
+                    <div class="card-title">${r.customerName}</div>
+                    <span class="badge ${cssClass}">${r.returnStatus}</span>
                 </div>
-                <button class="btn btn-small btn-danger" onclick="deleteReturn('${r.id}')">Delete</button>
+                <div class="card-grid">
+                    <div class="info-item"><span class="info-label">Business</span>${r.businessName}</div>
+                    <div class="info-item"><span class="info-label">Phone</span>${r.phone1}</div>
+                </div>
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn btn-small btn-danger" onclick="deleteReturn('${r.id}')">Delete Record</button>
+                </div>
             </div>
-        `).join("");
+            `;
+        }).join("");
     } catch (err) {
-        console.error("Error loading returns:", err);
-        container.innerHTML = "<p style='color:red;'>Failed to load returns.</p>";
+        container.innerHTML = "<div class='loading'>Failed to load returns.</div>";
     }
 }
 
 async function deleteReturn(id) {
-    if (!confirm("Are you sure you want to delete this return record?")) return;
+    if (!confirm("Delete this return?")) return;
     try {
         await db.collection(COLLECTIONS.RETURNS).doc(id).delete();
         returns = returns.filter(r => r.id !== id);
@@ -561,8 +470,173 @@ async function deleteReturn(id) {
         updateAdminStats();
         loadReturnsList();
     } catch (err) {
-        console.error("Error deleting return:", err);
         showAlert("Failed to delete return", "error");
+    }
+}
+
+/* -----------------------------
+   Branches & Numbers
+------------------------------ */
+
+// 1. Admin Upload Branches
+async function handleBranchUpload() {
+    const fileInput = document.getElementById("branchJsonFile");
+    const file = fileInput.files[0];
+    if (!file) return showAlert("Please select a JSON file first.", "error");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const jsonData = JSON.parse(e.target.result);
+            if (!Array.isArray(jsonData) || jsonData.length === 0) return showAlert("Invalid JSON file.", "error");
+            if (!confirm(`Found ${jsonData.length} records. Upload now?`)) return;
+
+            document.getElementById("uploadBtn").textContent = "Uploading...";
+            document.getElementById("uploadBtn").disabled = true;
+
+            const batch = db.batch();
+            jsonData.forEach(row => {
+                const docRef = db.collection(COLLECTIONS.BRANCHES).doc();
+                batch.set(docRef, {
+                    city: row.CITY || "",
+                    district: row.DISTRICT || "",
+                    branch: row.BRANCH || ""
+                });
+            });
+            await batch.commit();
+            
+            const snap = await db.collection(COLLECTIONS.BRANCHES).get();
+            branches = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            showAlert("Branches uploaded successfully!", "success");
+            fileInput.value = "";
+        } catch (error) {
+            showAlert("Error uploading file.", "error");
+        } finally {
+            document.getElementById("uploadBtn").textContent = "Upload JSON Data";
+            document.getElementById("uploadBtn").disabled = false;
+        }
+    };
+    reader.readAsText(file);
+}
+
+// 2. Business Search Branches (LABLED GRID UI)
+function searchBranches() {
+    const query = document.getElementById("branchSearchInput").value.trim().toLowerCase();
+    const container = document.getElementById("branchSearchResults");
+
+    if (!query) {
+        container.innerHTML = "<div class='loading'>Type a city name...</div>";
+        return;
+    }
+
+    const results = branches.filter(b => 
+        (b.city && b.city.toLowerCase().includes(query)) ||
+        (b.branch && b.branch.toLowerCase().includes(query))
+    );
+
+    if (results.length === 0) {
+        container.innerHTML = "<div class='loading'>No branches found.</div>";
+    } else {
+        container.innerHTML = results.map(r => `
+            <div class="result-card" style="border-left-color: #2563eb;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-code-branch" style="color:#2563eb"></i> 
+                        ${r.branch}
+                    </div>
+                    <span class="badge" style="background:#eff6ff; color:#2563eb;">Branch</span>
+                </div>
+                
+                <div class="card-grid">
+                    <div class="info-item">
+                         <span class="info-label"><i class="fas fa-city"></i> City</span>
+                         <div class="info-value">${r.city}</div>
+                    </div>
+                    <div class="info-item">
+                         <span class="info-label"><i class="fas fa-map-marked-alt"></i> District</span>
+                         <div class="info-value">${r.district}</div>
+                    </div>
+                </div>
+            </div>
+        `).join("");
+    }
+}
+
+// 3. Admin Upload Numbers
+async function handleNumbersUpload() {
+    const fileInput = document.getElementById("numberJsonFile");
+    const file = fileInput.files[0];
+    if (!file) return showAlert("Please select a JSON file first.", "error");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const jsonData = JSON.parse(e.target.result);
+            if (!Array.isArray(jsonData) || jsonData.length === 0) return showAlert("Invalid JSON file.", "error");
+            if (!confirm(`Found ${jsonData.length} numbers. Upload now?`)) return;
+
+            document.getElementById("uploadNumBtn").textContent = "Uploading...";
+            document.getElementById("uploadNumBtn").disabled = true;
+
+            const batch = db.batch();
+            jsonData.forEach(row => {
+                const docRef = db.collection(COLLECTIONS.BRANCH_NUMBERS).doc();
+                batch.set(docRef, row);
+            });
+            await batch.commit();
+
+            const snap = await db.collection(COLLECTIONS.BRANCH_NUMBERS).get();
+            branchNumbers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            showAlert("Numbers uploaded successfully!", "success");
+            fileInput.value = "";
+        } catch (error) {
+            showAlert("Error uploading file.", "error");
+        } finally {
+            document.getElementById("uploadNumBtn").textContent = "Upload Numbers Data";
+            document.getElementById("uploadNumBtn").disabled = false;
+        }
+    };
+    reader.readAsText(file);
+}
+
+// 4. Business Search Numbers
+function searchBranchNumbers() {
+    const query = document.getElementById("numberSearchInput").value.trim().toLowerCase();
+    const container = document.getElementById("numberSearchResults");
+
+    if (!query) {
+        container.innerHTML = "<div class='loading'>Type a branch name...</div>";
+        return;
+    }
+
+    const results = branchNumbers.filter(item => 
+        Object.values(item).some(val => String(val).toLowerCase().includes(query))
+    );
+
+    if (results.length === 0) {
+        container.innerHTML = "<div class='loading'>No numbers found.</div>";
+    } else {
+        container.innerHTML = results.map(r => {
+            const bName = r.branch || r.Branch || r.name || "Branch";
+            const bNum = r.number || r.Number || r.phone || "No Number";
+            
+            return `
+            <div class="result-card" style="border-left-color: #7c3aed;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-building" style="color:#7c3aed"></i>
+                        ${bName}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-phone-alt"></i> Contact Number</span>
+                    <div class="info-value" style="font-size:1.1rem;">${bNum}</div>
+                </div>
+            </div>
+            `;
+        }).join("");
     }
 }
 
