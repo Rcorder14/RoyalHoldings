@@ -75,7 +75,6 @@ async function initializeApp() {
 }
 
 async function loadData() {
-    // We try/catch inside here to ensure one failure doesn't stop everything
     try {
         const [bizSnap, retSnap, branchSnap, numSnap] = await Promise.all([
             db.collection(COLLECTIONS.BUSINESSES).get(),
@@ -89,7 +88,7 @@ async function loadData() {
         branches = branchSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         branchNumbers = numSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        console.log(`Loaded: ${branches.length} branches, ${branchNumbers.length} numbers.`); // Debug log
+        console.log(`Loaded: ${branches.length} branches, ${branchNumbers.length} numbers.`);
     } catch (e) {
         console.error("Error loading data from Firestore:", e);
     }
@@ -482,23 +481,21 @@ async function deleteReturn(id) {
 }
 
 /* -----------------------------
-   Branches & Numbers (FIXED UPLOAD LOGIC)
+   Branches & Numbers
 ------------------------------ */
 
-// Helper to Upload large data in chunks (Firestore limit is 500 writes per batch)
+// Helper to Upload large data in chunks
 async function uploadInChunks(collectionName, data, mapFn) {
     const BATCH_SIZE = 400; // Safe limit
     const total = data.length;
     let processed = 0;
 
-    // Split data into chunks
     for (let i = 0; i < total; i += BATCH_SIZE) {
         const chunk = data.slice(i, i + BATCH_SIZE);
         const batch = db.batch();
 
         chunk.forEach(item => {
             const docRef = db.collection(collectionName).doc();
-            // Use map function if provided, otherwise raw item
             batch.set(docRef, mapFn ? mapFn(item) : item);
         });
 
@@ -508,7 +505,7 @@ async function uploadInChunks(collectionName, data, mapFn) {
     }
 }
 
-// 1. Admin Upload Branches (Fixed Key Matching)
+// 1. Admin Upload Branches
 async function handleBranchUpload() {
     const fileInput = document.getElementById("branchJsonFile");
     const file = fileInput.files[0];
@@ -520,22 +517,19 @@ async function handleBranchUpload() {
             const jsonData = JSON.parse(e.target.result);
             if (!Array.isArray(jsonData) || jsonData.length === 0) return showAlert("Invalid JSON file.", "error");
             
-            if (!confirm(`Found ${jsonData.length} records. This might take a moment. Upload now?`)) return;
+            if (!confirm(`Found ${jsonData.length} records. Upload now?`)) return;
 
             document.getElementById("uploadBtn").textContent = "Uploading...";
             document.getElementById("uploadBtn").disabled = true;
 
-            // FIX 1: Handle multiple case variations for keys (CITY, City, city)
             const mapBranchData = (row) => ({
                 city: row.CITY || row.City || row.city || "",
                 district: row.DISTRICT || row.District || row.district || "",
                 branch: row.BRANCH || row.Branch || row.branch || ""
             });
 
-            // FIX 2: Use chunking to avoid 500-limit crash
             await uploadInChunks(COLLECTIONS.BRANCHES, jsonData, mapBranchData);
             
-            // Reload local data
             const snap = await db.collection(COLLECTIONS.BRANCHES).get();
             branches = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -595,7 +589,7 @@ function searchBranches() {
     }
 }
 
-// 3. Admin Upload Numbers (Fixed Chunking)
+// 3. Admin Upload Numbers
 async function handleNumbersUpload() {
     const fileInput = document.getElementById("numberJsonFile");
     const file = fileInput.files[0];
@@ -612,7 +606,6 @@ async function handleNumbersUpload() {
             document.getElementById("uploadNumBtn").textContent = "Uploading...";
             document.getElementById("uploadNumBtn").disabled = true;
 
-            // FIX: Use chunking for numbers too
             await uploadInChunks(COLLECTIONS.BRANCH_NUMBERS, jsonData, null);
 
             const snap = await db.collection(COLLECTIONS.BRANCH_NUMBERS).get();
@@ -681,3 +674,37 @@ function showAlert(msg, type) {
     document.getElementById("alertContainer").appendChild(el);
     setTimeout(() => el.remove(), 4000);
 }
+
+/* -----------------------------------------------------------
+   SECURITY / DETERRENTS
+   (Added at the bottom to ensure core logic loads first)
+----------------------------------------------------------- */
+
+// Disable Right Click
+document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+});
+
+// Disable Key Shortcuts (F12, Ctrl+Shift+I, etc.)
+document.addEventListener('keydown', function(e) {
+    // F12
+    if(e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        return false;
+    }
+    // Ctrl+Shift+I (Inspect)
+    if(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
+        e.preventDefault();
+        return false;
+    }
+    // Ctrl+Shift+J (Console)
+    if(e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
+        e.preventDefault();
+        return false;
+    }
+    // Ctrl+U (View Source)
+    if(e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+        e.preventDefault();
+        return false;
+    }
+});
