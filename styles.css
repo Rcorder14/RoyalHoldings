@@ -389,3 +389,60 @@ body {
     .dashboard-nav { flex-direction: column; align-items: stretch; gap: 15px; }
     .card-grid { grid-template-columns: 1fr; }
 }
+
+/* -----------------------------------------------------------
+   NEW: Table View for Branch Search
+----------------------------------------------------------- */
+.branch-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-top: 10px;
+}
+
+.branch-table th {
+    text-align: left;
+    padding: 16px 24px;
+    background: #ffffff;
+    color: #4b5563;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.branch-table td {
+    padding: 14px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+/* Highlight the City Name similar to the image */
+.branch-table td.highlight {
+    color: #2563eb; 
+    font-weight: 500;
+}
+
+.branch-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.branch-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* -----------------------------------------------------------
+   11. FOOTER
+----------------------------------------------------------- */
+.footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 25px;
+    border-top: 1px solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 0.9rem;
+    font-weight: 500;
+}

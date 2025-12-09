@@ -546,7 +546,7 @@ async function handleBranchUpload() {
     reader.readAsText(file);
 }
 
-// 2. Business Search Branches
+// 2. Business Search Branches (Table View + Smart Sort)
 function searchBranches() {
     const query = document.getElementById("branchSearchInput").value.trim().toLowerCase();
     const container = document.getElementById("branchSearchResults");
@@ -556,36 +556,50 @@ function searchBranches() {
         return;
     }
 
-    const results = branches.filter(b => 
+    // 1. Filter results
+    let results = branches.filter(b => 
         (b.city && b.city.toLowerCase().includes(query)) ||
         (b.branch && b.branch.toLowerCase().includes(query))
     );
 
+    // 2. Sort results: "Starts With" first, then A-Z
+    results.sort((a, b) => {
+        const aCity = a.city.toLowerCase();
+        const bCity = b.city.toLowerCase();
+        const aStarts = aCity.startsWith(query);
+        const bStarts = bCity.startsWith(query);
+
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return aCity.localeCompare(bCity);
+    });
+
     if (results.length === 0) {
         container.innerHTML = "<div class='loading'>No branches found.</div>";
     } else {
-        container.innerHTML = results.map(r => `
-            <div class="result-card" style="border-left-color: #2563eb;">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-code-branch" style="color:#2563eb"></i> 
-                        ${r.branch}
-                    </div>
-                    <span class="badge" style="background:#eff6ff; color:#2563eb;">Branch</span>
-                </div>
-                
-                <div class="card-grid">
-                    <div class="info-item">
-                         <span class="info-label"><i class="fas fa-city"></i> City</span>
-                         <div class="info-value">${r.city}</div>
-                    </div>
-                    <div class="info-item">
-                         <span class="info-label"><i class="fas fa-map-marked-alt"></i> District</span>
-                         <div class="info-value">${r.district}</div>
-                    </div>
-                </div>
-            </div>
+        // Generate Table HTML matching the image
+        let tableHtml = `
+            <table class="branch-table">
+                <thead>
+                    <tr>
+                        <th>City <i class="fas fa-chevron-up" style="font-size:12px; margin-left:5px; color:#2563eb;"></i></th>
+                        <th>District</th>
+                        <th>Branch</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        tableHtml += results.map(r => `
+            <tr>
+                <td class="highlight">${r.city}</td>
+                <td>${r.district}</td>
+                <td>${r.branch}</td>
+            </tr>
         `).join("");
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
     }
 }
 
