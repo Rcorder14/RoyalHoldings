@@ -1,8 +1,110 @@
 /* -----------------------------------------------------------
-   1. GLOBAL & RESET
+   1. GLOBAL & RESET & THEME VARIABLES
 ----------------------------------------------------------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+:root {
+    /* Light Mode (Default) */
+    --bg-body: #f3f4f6;
+    --bg-card: #ffffff;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --input-bg: #f9fafb;
+    --input-border: #e5e7eb;
+    --primary: #667eea;
+    --primary-hover: #5a67d8;
+    --shadow-sm: rgba(0, 0, 0, 0.05);
+    --shadow-md: rgba(0, 0, 0, 0.1);
+    --table-header-bg: #ffffff;
+    --table-row-hover: #f9fafb;
+    --nav-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+    /* Dark Mode Overrides */
+    --bg-body: #111827;
+    --bg-card: #1f2937;
+    --text-main: #f9fafb;
+    --text-muted: #9ca3af;
+    --border-color: #374151;
+    --input-bg: #374151;
+    --input-border: #4b5563;
+    --primary: #818cf8;
+    --primary-hover: #6366f1;
+    --shadow-sm: rgba(0, 0, 0, 0.3);
+    --shadow-md: rgba(0, 0, 0, 0.4);
+    --table-header-bg: #1f2937;
+    --table-row-hover: #374151;
+    --nav-bg: #1f2937;
+}
+
+/* -----------------------------------------------------------
+   1.1 THEME SLIDE BUTTON WITH ICONS
+----------------------------------------------------------- */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "\f185"; /* Sun Icon */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+  background-color: #4b5563;
+}
+
+input:checked + .slider:before {
+  transform: translateX(30px);
+  content: "\f186"; /* Moon Icon */
+  color: #667eea;
+  background-color: #1f2937;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary);
+}
+
+/* -----------------------------------------------------------
+   2. MAIN STYLES
+----------------------------------------------------------- */
 * {
     margin: 0;
     padding: 0;
@@ -11,16 +113,18 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', sans-serif;
-    background: #f3f4f6;
-    color: #1f2937;
+    background: var(--bg-body);
+    color: var(--text-main);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .container {
     max-width: 1000px;
     margin: 0 auto;
     padding: 40px 20px;
+    position: relative;
 }
 
 .hidden {
@@ -28,36 +132,229 @@ body {
 }
 
 /* -----------------------------------------------------------
-   2. HEADER & BRANDING
+   NEW: LANDING PAGE STYLES
+----------------------------------------------------------- */
+#landingPage {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 40px;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.landing-logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.landing-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 40px;
+}
+
+/* --- Heading Text Color Animation --- */
+.hero-text h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 15px;
+    
+    /* Gradient Background */
+    background: linear-gradient(
+        to right, 
+        var(--primary), 
+        #a855f7, 
+        #ec4899, 
+        var(--primary)
+    );
+    background-size: 200% auto;
+    
+    /* Clip background to text */
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    
+    /* Animation */
+    animation: textShine 4s linear infinite;
+}
+
+@keyframes textShine {
+    to {
+        background-position: 200% center;
+    }
+}
+
+.hero-text p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* --- Laptop Data Animation --- */
+.hero-animation {
+    width: 100%;
+    max-width: 500px;
+    height: 250px; /* Increased height for laptop */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.laptop-container {
+    position: relative;
+    width: 280px;
+    height: 170px;
+}
+
+/* Laptop Screen */
+.laptop-screen {
+    width: 240px;
+    height: 150px;
+    background: #1f2937;
+    border: 8px solid #374151;
+    border-radius: 10px 10px 0 0;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 15px;
+    padding-bottom: 20px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* Data Bars inside screen */
+.data-bar {
+    width: 25px;
+    background: linear-gradient(to top, var(--primary), #a855f7);
+    border-radius: 4px 4px 0 0;
+    animation: barGrow 2s infinite ease-in-out;
+}
+
+.bar-1 { height: 40%; animation-delay: 0s; }
+.bar-2 { height: 70%; animation-delay: 0.5s; background: linear-gradient(to top, #ec4899, #a855f7); }
+.bar-3 { height: 50%; animation-delay: 1s; }
+
+/* Laptop Base */
+.laptop-base {
+    width: 280px;
+    height: 15px;
+    background: #4b5563;
+    border-radius: 0 0 15px 15px;
+    position: relative;
+}
+
+.laptop-base::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background: #6b7280;
+    border-radius: 0 0 5px 5px;
+}
+
+/* Floating Elements (Analysis Icons) */
+.floating-icon {
+    position: absolute;
+    font-size: 2rem;
+    color: var(--primary);
+    opacity: 0.8;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.icon-chart {
+    top: -20px;
+    right: -30px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.icon-db {
+    bottom: 20px;
+    left: -40px;
+    color: #ec4899;
+    font-size: 1.8rem;
+    animation: float 3.5s ease-in-out infinite reverse;
+}
+
+.icon-check {
+    top: 40px;
+    left: -20px;
+    color: #10b981;
+    font-size: 1.5rem;
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes barGrow {
+    0%, 100% { transform: scaleY(0.5); opacity: 0.7; }
+    50% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* -----------------------------------------------------------
+   3. HEADER & BRANDING
    ----------------------------------------------------------- */
 .header {
     text-align: center;
     margin-bottom: 40px;
+    position: relative;
 }
 
 .header h1 {
     font-size: 2.2rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     margin-bottom: 8px;
     letter-spacing: -0.025em;
 }
 
 .header p {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 1.1rem;
 }
 
 /* -----------------------------------------------------------
-   3. AUTH & FORMS
+   4. AUTH & FORMS
    ----------------------------------------------------------- */
 .auth-card {
     max-width: 450px;
     margin: 0 auto;
     padding: 40px;
-    background: white;
+    background: var(--bg-card);
     border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 25px -5px var(--shadow-sm);
+    border: 1px solid var(--border-color);
 }
 
 .form-group {
@@ -69,7 +366,7 @@ body {
     margin-bottom: 8px;
     font-weight: 600;
     font-size: 0.9rem;
-    color: #374151;
+    color: var(--text-main);
 }
 
 .form-group input,
@@ -77,28 +374,29 @@ body {
 .form-group textarea {
     width: 100%;
     padding: 12px 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     font-size: 15px;
     font-family: inherit;
     transition: all 0.2s;
-    background: #f9fafb;
+    background: var(--input-bg);
+    color: var(--text-main);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #667eea;
-    background: white;
+    border-color: var(--primary);
+    background: var(--bg-card);
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
 /* -----------------------------------------------------------
-   4. BUTTONS
+   5. BUTTONS
    ----------------------------------------------------------- */
 .btn {
-    background: #667eea;
+    background: var(--primary);
     color: white;
     padding: 12px 20px;
     border: none;
@@ -111,7 +409,7 @@ body {
 }
 
 .btn:hover {
-    background: #5a67d8;
+    background: var(--primary-hover);
     transform: translateY(-1px);
     box-shadow: 0 6px 10px -1px rgba(102, 126, 234, 0.4);
 }
@@ -139,20 +437,21 @@ body {
 }
 
 /* -----------------------------------------------------------
-   5. NAVIGATION & TABS
+   6. NAVIGATION & TABS
    ----------------------------------------------------------- */
 .dashboard-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: var(--nav-bg);
     padding: 16px 24px;
     border-radius: 12px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px var(--shadow-sm);
+    border: 1px solid var(--border-color);
 }
 
-.logo { font-weight: 800; font-size: 1.1rem; color: #111827; }
+.logo { font-weight: 800; font-size: 1.1rem; color: var(--text-main); }
 
 .user-info { display: flex; align-items: center; gap: 12px; }
 
@@ -165,6 +464,9 @@ body {
     font-weight: bold; font-size: 14px;
 }
 
+.user-text h4 { font-weight: 600; color: var(--text-main); font-size: 0.95rem; margin-bottom: 0; }
+.user-text span { font-size: 13px; color: var(--text-muted); }
+
 .tabs {
     display: flex; gap: 10px; margin-bottom: 25px;
     overflow-x: auto; padding-bottom: 5px;
@@ -173,9 +475,9 @@ body {
 .tab {
     flex: 1;
     padding: 12px;
-    border: 1px solid #e5e7eb;
-    background: white;
-    color: #6b7280;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
     cursor: pointer;
     border-radius: 8px;
     font-weight: 600;
@@ -184,26 +486,28 @@ body {
     white-space: nowrap;
 }
 
-.tab:hover { border-color: #d1d5db; color: #374151; }
+.tab:hover { border-color: #d1d5db; color: var(--text-main); }
 
 .tab.active {
-    background: #667eea;
+    background: var(--primary);
     color: white;
-    border-color: #667eea;
+    border-color: var(--primary);
     box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.25);
 }
 
 /* -----------------------------------------------------------
-   6. CARDS & LAYOUTS
+   7. CARDS & LAYOUTS
    ----------------------------------------------------------- */
 .card {
-    background: white;
+    background: var(--bg-card);
     padding: 30px;
     border-radius: 12px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    border: 1px solid #f3f4f6;
+    box-shadow: 0 1px 3px var(--shadow-sm);
+    border: 1px solid var(--border-color);
 }
+
+.card h3, .card h2 { color: var(--text-main) !important; }
 
 .two-column {
     display: grid;
@@ -212,7 +516,7 @@ body {
 }
 
 /* -----------------------------------------------------------
-   7. STATS
+   8. STATS
    ----------------------------------------------------------- */
 .stats-grid {
     display: grid;
@@ -222,12 +526,12 @@ body {
 }
 
 .stat-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
     padding: 24px;
     text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    border: 1px solid #f3f4f6;
+    box-shadow: 0 4px 6px -1px var(--shadow-sm);
+    border: 1px solid var(--border-color);
     transition: transform 0.2s;
 }
 
@@ -236,15 +540,15 @@ body {
 .stat-number {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #111827;
+    color: var(--text-main);
     line-height: 1;
     margin-bottom: 8px;
 }
 
-.stat-label { color: #6b7280; font-size: 0.9rem; font-weight: 500; }
+.stat-label { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
 
 /* -----------------------------------------------------------
-   8. RESULTS CARDS (THE NEW UI)
+   9. RESULTS CARDS
    ----------------------------------------------------------- */
 #searchResults, #branchSearchResults, #numberSearchResults, #allReturnsList {
     display: flex;
@@ -252,42 +556,39 @@ body {
     gap: 16px;
 }
 
-/* The Main Result Card */
 .result-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 5px var(--shadow-sm);
     padding: 20px 24px;
-    border: 1px solid #e5e7eb;
-    border-left: 5px solid #ccc; /* Default border */
+    border: 1px solid var(--border-color);
+    border-left: 5px solid #ccc;
     transition: all 0.2s ease;
     animation: slideUp 0.3s ease-out forwards;
 }
 
 .result-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 15px -3px var(--shadow-sm);
 }
 
-/* Status Specific Border Colors */
-.result-card.status-returned { border-left-color: #b10505; } /* Green */
-.result-card.status-cancelled { border-left-color: #ac006a; } /* Red */
-.result-card.status-other { border-left-color: #f59e0b; } /* Orange */
+.result-card.status-returned { border-left-color: #b10505; }
+.result-card.status-cancelled { border-left-color: #ac006a; }
+.result-card.status-other { border-left-color: #f59e0b; }
 
-/* Card Header Layout */
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--text-main);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -295,11 +596,10 @@ body {
 
 .card-subtitle {
     font-size: 0.85rem;
-    color: #9ca3af;
+    color: var(--text-muted);
     margin-top: 2px;
 }
 
-/* Badges */
 .badge {
     padding: 6px 12px;
     border-radius: 50px;
@@ -308,12 +608,11 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
-
+/* Badges keep their own colors for contrast */
 .badge.status-returned { background: #fad1d1; color: #b10505; }
 .badge.status-cancelled { background: #fee2fd; color: #ac006a; }
 .badge.status-other { background: #fef3c7; color: #92400e; }
 
-/* Grid for Details */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -322,7 +621,7 @@ body {
 
 .info-item {
     font-size: 0.9rem;
-    color: #4b5563;
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
 }
@@ -330,7 +629,7 @@ body {
 .info-label {
     font-size: 0.75rem;
     text-transform: uppercase;
-    color: #9ca3af;
+    color: var(--text-muted);
     font-weight: 700;
     margin-bottom: 4px;
     display: flex;
@@ -340,11 +639,11 @@ body {
 
 .info-value {
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-main);
 }
 
 /* -----------------------------------------------------------
-   9. ALERTS & UTILS
+   10. ALERTS & UTILS
    ----------------------------------------------------------- */
 #alertContainer {
     position: fixed;
@@ -378,7 +677,7 @@ body {
 
 .loading {
     text-align: center;
-    color: #9ca3af;
+    color: var(--text-muted);
     padding: 20px;
     font-style: italic;
 }
@@ -391,43 +690,48 @@ body {
 }
 
 /* -----------------------------------------------------------
-   NEW: Table View for Branch Search
+   11. BRANCH TABLE
 ----------------------------------------------------------- */
 .branch-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--bg-card);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px var(--shadow-sm);
     margin-top: 10px;
 }
 
 .branch-table th {
     text-align: left;
     padding: 16px 24px;
-    background: #ffffff;
-    color: #4b5563;
+    background: var(--table-header-bg);
+    color: var(--text-muted);
     font-weight: 700;
     font-size: 0.95rem;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .branch-table td {
     padding: 14px 24px;
-    border-bottom: 1px solid #f3f4f6;
-    color: #1f2937;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
     font-size: 0.95rem;
 }
 
-/* Highlight the City Name similar to the image */
+/* Light Mode: Keep City Blue/Purple */
 .branch-table td.highlight {
-    color: #2563eb; 
+    color: var(--primary); 
     font-weight: 500;
 }
 
+/* Dark Mode: Make City White */
+[data-theme="dark"] .branch-table td.highlight {
+    color: var(--text-main);
+}
+
 .branch-table tbody tr:hover {
-    background-color: #f9fafb;
+    background-color: var(--table-row-hover);
 }
 
 .branch-table tr:last-child td {
@@ -435,14 +739,14 @@ body {
 }
 
 /* -----------------------------------------------------------
-   11. FOOTER
+   12. FOOTER
 ----------------------------------------------------------- */
 .footer {
     text-align: center;
     margin-top: 60px;
     padding-top: 25px;
-    border-top: 1px solid #e5e7eb;
-    color: #9ca3af;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
     font-size: 0.9rem;
     font-weight: 500;
 }

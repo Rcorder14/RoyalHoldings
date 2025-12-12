@@ -44,8 +44,37 @@ const COLLECTIONS = {
    App Initialization
 ------------------------------ */
 document.addEventListener("DOMContentLoaded", () => {
+    initTheme(); // Initialize Dark Mode
     initializeApp();
 });
+
+// --- Theme Logic (Synced across landing & main) ---
+function initTheme() {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    
+    // Sync both checkboxes
+    const isDark = savedTheme === "dark";
+    const landingCheck = document.getElementById("themeCheckboxLanding");
+    const mainCheck = document.getElementById("themeCheckboxMain");
+    
+    if(landingCheck) landingCheck.checked = isDark;
+    if(mainCheck) mainCheck.checked = isDark;
+}
+
+function toggleThemeGlobal(checkbox) {
+    const newTheme = checkbox.checked ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    
+    // Ensure the other checkbox matches
+    const landingCheck = document.getElementById("themeCheckboxLanding");
+    const mainCheck = document.getElementById("themeCheckboxMain");
+    
+    if(landingCheck) landingCheck.checked = checkbox.checked;
+    if(mainCheck) mainCheck.checked = checkbox.checked;
+}
+// ----------------------------------------------
 
 async function initializeApp() {
     hideAll();
@@ -70,7 +99,8 @@ async function initializeApp() {
         if (currentUser.type === "admin") showAdminDashboard();
         else showBusinessDashboard();
     } else {
-        showLogin();
+        // Show Landing Page by default if not logged in
+        showLandingPage();
     }
 }
 
@@ -95,21 +125,32 @@ async function loadData() {
 }
 
 /* -----------------------------
-   Authentication
+   Navigation & Auth
 ------------------------------ */
+function showLandingPage() {
+    hideAll();
+    document.getElementById("landingPage").classList.remove("hidden");
+    document.getElementById("mainHeader").classList.add("hidden"); // Ensure main header is hidden
+}
+
 function showLogin() {
     hideAll();
     document.getElementById("loginScreen").classList.remove("hidden");
+    document.getElementById("mainHeader").classList.remove("hidden"); // Show main header
 }
 
 function showRegister() {
     hideAll();
     document.getElementById("registerScreen").classList.remove("hidden");
+    document.getElementById("mainHeader").classList.remove("hidden");
 }
 
 function hideAll() {
-    ["loginScreen", "registerScreen", "businessDashboard", "adminDashboard"]
-        .forEach(id => document.getElementById(id).classList.add("hidden"));
+    ["landingPage", "loginScreen", "registerScreen", "businessDashboard", "adminDashboard"]
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add("hidden");
+        });
 }
 
 async function handleLogin() {
@@ -194,7 +235,7 @@ async function handleRegister() {
 function logout() {
     currentUser = null;
     sessionStorage.removeItem("currentUser");
-    showLogin();
+    showLogin(); // Or showLandingPage() if you prefer
     showAlert("Logged out", "success");
 }
 
@@ -204,6 +245,7 @@ function logout() {
 function showBusinessDashboard() {
     hideAll();
     document.getElementById("businessDashboard").classList.remove("hidden");
+    document.getElementById("mainHeader").classList.remove("hidden");
     document.getElementById("businessName").textContent = currentUser.businessName;
     showBusinessTab("search");
 }
@@ -303,7 +345,7 @@ function universalSearchRecords() {
             <div class="result-card ${cssClass}">
                 <div class="card-header">
                     <div class="card-title">
-                        <i class="fas fa-user-circle" style="color:#667eea"></i>
+                        <i class="fas fa-user-circle" style="color:var(--primary)"></i>
                         ${r.customerName}
                     </div>
                     <span class="badge ${cssClass}">${r.returnStatus}</span>
@@ -347,6 +389,7 @@ function universalSearchRecords() {
 function showAdminDashboard() {
     hideAll();
     document.getElementById("adminDashboard").classList.remove("hidden");
+    document.getElementById("mainHeader").classList.remove("hidden");
     updateAdminStats();
     showAdminTab("businesses");
 }
@@ -582,7 +625,7 @@ function searchBranches() {
             <table class="branch-table">
                 <thead>
                     <tr>
-                        <th>City <i class="fas fa-chevron-up" style="font-size:12px; margin-left:5px; color:#2563eb;"></i></th>
+                        <th>City <i class="fas fa-chevron-up" style="font-size:12px; margin-left:5px; color:var(--primary);"></i></th>
                         <th>District</th>
                         <th>Branch</th>
                     </tr>
